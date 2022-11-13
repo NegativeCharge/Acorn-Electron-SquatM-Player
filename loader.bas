@@ -1,0 +1,2 @@
+MODE 4
+*MAIN
