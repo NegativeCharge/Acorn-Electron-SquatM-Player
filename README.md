@@ -7,7 +7,9 @@
 
 Currently requires both ca65 and BeebAsm to compile until I convert all to BeebAsm.
 
-The track currently needs to be included at the bottom of main.s
+The track currently needs to be included at the bottom of main.s (samples are in the tracks directory)
+
+SquatM tracks can be composed in 1Tracker (https://shiru.untergrund.net/software.shtml) - you will need to export the track in Atari ca65 format.
 
 The call to turn the speaker on/off is quite wasteful at the moment and still needs optimizing.
 

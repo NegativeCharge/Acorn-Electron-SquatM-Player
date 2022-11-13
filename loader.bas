@@ -1,2 +1,2 @@
-MODE 4
+MODE 5
 *MAIN

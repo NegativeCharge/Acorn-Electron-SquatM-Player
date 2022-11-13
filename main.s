@@ -510,7 +510,7 @@ COLOR4:
 	beq		:+
 	lda 	#$f0
   	sta 	$fe08
-  	lda 	#$0f
+  	lda 	#$f0
   	sta 	$fe09
 	jmp		:++
 :
@@ -531,6 +531,6 @@ sample_list:
 	.word 	sample_6
 	.word 	sample_7
 	
-	.include "shiru.track.s"
+	.include "tracks\lets_go.track.s"
 	
 end:
