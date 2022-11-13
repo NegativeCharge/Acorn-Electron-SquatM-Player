@@ -8,3 +8,5 @@
 Currently requires both ca65 and BeebAsm to compile until I convert all to BeebAsm.
 
 The track currently needs to be included at the bottom of main.s
+
+SSD file for emulators/hardware: https://github.com/NegativeCharge/ca65-SquatM-Player/blob/master/ca65-squatm-player.ssd?raw=true
