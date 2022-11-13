@@ -12,3 +12,5 @@ The track currently needs to be included at the bottom of main.s
 The call to turn the speaker on/off is quite wasteful at the moment and still needs optimizing.
 
 SSD file for emulators/hardware: https://github.com/NegativeCharge/ca65-SquatM-Player/blob/master/ca65-squatm-player.ssd?raw=true
+
+**NOTE:** Requires a Slogger Turbo Board or equivalent to be enabled.
