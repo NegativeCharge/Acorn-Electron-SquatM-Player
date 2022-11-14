@@ -1,7 +1,9 @@
 ;SquatM beeper music engine
 ;Originally written by Shiru 06'17 for ZX Spectrum 48K
 ;Ported to Atari 8-bit by Shiru 07'21
-;Ported to Acorn Electron by Negative Charge 11'22
+;Ported to the Acorn Electron by Negative Charge 11'22
+
+\ NOTE : Requires a turbo board (e.g. Slogger) for playback at correct speed
 
 \ Constants
 SHEILA_COUNTER          = &FE06
@@ -284,8 +286,8 @@ GUARD   &5800
 	sta noise_add+1
 	sta noise_acc+1
 	
-	ldx #<(200*64*2/95)	;noise duration, takes as long as inner sound loop
-	lda #>(200*64*2/95)
+	ldx #<(200*32*2/95)	;noise duration, takes as long as inner sound loop
+	lda #>(200*32*2/95)
 	sta noise_cnt
 	
 .noise_loop
@@ -368,7 +370,7 @@ ENDIF
 
 .sound_loop_0
 
-	ldx #64				;internal loop runs 64 times
+	ldx #32				;internal loop runs 64 times
 	ldy #0				;sample ptr inside the loop
 	
 .sound_loop
@@ -396,6 +398,7 @@ ENDIF
 	lda sample_mask		;3
 	sta sample_bit		;3
 	iny					;2
+	iny
 
 .sample_next
 
@@ -498,18 +501,6 @@ ENDIF
 .L15
 	jmp play_loop
 
-.cursorOff
-    LDA #16
-    STA &D0
-
-    RTS
-
-.changeScreenMode
-    LDA #22
-    JSR OSWRCH
-    TXA
-	JMP OSWRCH
-
 .CONSOL
 	pha                     ;3
     beq L12                 ;2/3
@@ -548,7 +539,7 @@ ENDIF
 	equw 	sample_6
 	equw 	sample_7
 
-	INCLUDE "tracks\high_orbit.track.6502"
+	INCLUDE "tracks\lets_go.track.6502"
 
 .end
 
