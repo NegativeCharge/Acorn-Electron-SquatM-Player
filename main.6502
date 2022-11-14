@@ -286,8 +286,8 @@ GUARD   &5800
 	sta noise_add+1
 	sta noise_acc+1
 	
-	ldx #<(200*32*2/95)	;noise duration, takes as long as inner sound loop
-	lda #>(200*32*2/95)
+	ldx #<(200*64*2/95)	;noise duration, takes as long as inner sound loop
+	lda #>(200*64*2/95)
 	sta noise_cnt
 	
 .noise_loop
@@ -370,7 +370,7 @@ ENDIF
 
 .sound_loop_0
 
-	ldx #32				;internal loop runs 64 times
+	ldx #64				;internal loop runs 64 times
 	ldy #0				;sample ptr inside the loop
 	
 .sound_loop
@@ -398,7 +398,6 @@ ENDIF
 	lda sample_mask		;3
 	sta sample_bit		;3
 	iny					;2
-	iny
 
 .sample_next
 
@@ -539,7 +538,7 @@ ENDIF
 	equw 	sample_6
 	equw 	sample_7
 
-	INCLUDE "tracks\lets_go.track.6502"
+	INCLUDE "tracks\h0ffman.track.6502"
 
 .end
 

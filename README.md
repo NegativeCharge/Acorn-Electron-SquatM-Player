@@ -13,9 +13,10 @@ The call to turn the speaker on/off is quite wasteful at the moment and still ne
 
 SSD file for emulators/hardware: https://github.com/NegativeCharge/Acorn-Electron-SquatM-Player/blob/master/SquatM_Beeper_Engine.ssd?raw=true
 
+**NOTE:** Requires a Slogger Turbo Board or equivalent to be enabled.
+
 
 Release Notes:
 
 - v0.1 - Initial ca65 port
 - v0.2 - Fully converted to BeebAsm. Debug rasters now off by default as they waste cycles.
-- v0.3 - Removed need for turbo board by reducing internal loop count from 64 to 32.
