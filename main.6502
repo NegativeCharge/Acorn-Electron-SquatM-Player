@@ -1,0 +1,576 @@
+;SquatM beeper music engine
+;Originally written by Shiru 06'17 for ZX Spectrum 48K
+;Ported to Atari 8-bit by Shiru 07'21
+;Ported to Acorn Electron by Negative Charge 11'22
+
+\ Constants
+SHEILA_COUNTER          = &FE06
+SHEILA_MISC_CONTROL     = &FE07
+OSBYTE                  = &FFF4
+OSWRCH					= &FFEE
+
+DEBUG                   = FALSE
+NTSC                    = FALSE
+
+OP_NOP                  = &EA
+OP_ROL_A                = &2A
+
+\ Zero Page
+ORG     &00
+GUARD   &9F
+
+.control_register_value                 SKIP 1
+.speaker_on                             SKIP 1
+.speaker_off                            SKIP 1
+.ula_control_register_previous_value    SKIP 1
+
+.vars_start
+.loop_ptr		SKIP 2
+.pattern_ptr 	SKIP 2
+.sample_ptr		SKIP 2
+.sample_mask	SKIP 1		;&00 or &ff
+.sample_bit		SKIP 1
+.sample_out		SKIP 1
+.row_length		SKIP 1
+.row_flags		SKIP 1
+.ch0_add		SKIP 2
+.ch1_add		SKIP 2
+.ch2_add		SKIP 2
+.ch3_add		SKIP 2
+.ch0_acc		SKIP 2
+.ch1_acc		SKIP 2
+.ch2_acc		SKIP 2
+.ch3_acc		SKIP 2
+.ch_mixer		SKIP 1
+.ch_acc			SKIP 1
+.noise_acc		SKIP 2
+.noise_add		SKIP 2
+.noise_cnt		SKIP 1
+.noise_div		SKIP 1
+.noise_pitch	SKIP 1
+.noise_volume	SKIP 1
+.temp			SKIP 1
+.vars_end
+
+ORG 	&E00
+GUARD   &5800
+
+.start
+	cld
+
+	lda 	#143
+	ldx 	#12
+	ldy 	#$FF
+	jsr 	OSBYTE                                           ; Claim NMI
+
+	lda 	#$40
+	sta 	$D00                                            ; Store RTI as NMI routine
+
+	lda 	#163
+	ldx 	#128
+	ldy 	#1
+	jsr 	OSBYTE                                          ; Disable printer and ADCs
+
+	lda 	#0
+	sta 	$2B2                                            ; Clear type byte for ROM 12 (Plus 1) in Paged ROM type table
+
+	lda     #$0F                                            ; Flush selected wait class
+	ldx     #$00                                            ; All waits flushed
+	jsr     OSBYTE
+
+	sei                                                     ; Set interrupt disable
+	lda     #$F2                                            ; Read RAM copy of location &FE07 (ULA SHEILA Misc. Control)
+	ldx     #$00
+	ldy     #$FF
+	jsr     OSBYTE                                          ; Old value returned in X
+
+	stx     ula_control_register_previous_value             ; Store old value
+	txa
+	and     #$F8                                            ; Mask - 11111000
+	sta     speaker_off                                     ; Store previous FE07 values for CAPS LOCK LED, CASSETTE MOTOR, and DISPLAY MODE 
+	ora     #$02                                            ; Switch on sound generation - 00000010
+	sta     speaker_on                                      ; Store previous FE07 value with sound generation enabled
+	lda     #$00
+	sta     SHEILA_COUNTER                                  ; Zero the ULA SHEILA counter (FE06), creating a toggle speaker (inaudible frequency)
+	ldx     #$00                                            ; Clear X
+	cli
+
+	; Clear the vsync interrupt by setting a bit.
+
+    lda 	$f4
+    ora 	#$10
+    sta 	$fe05
+
+    ; Wait until the vsync bit is cleared.
+
+    lda 	#$04
+.i1
+    bit 	$fe00
+    bne 	i1
+
+    ; Wait until the vsync bit is set, indicating the start of a new frame.
+
+.i2
+    bit 	$fe00
+    beq 	i2
+
+    lda 	$f4
+    ora 	#$10
+    sta 	$fe05
+	
+	sei
+	
+	lda 	#LO(music_data)
+	ldx 	#HI(music_data)
+
+.play
+
+	pha
+	txa
+	pha
+	
+	lda #0
+	tax
+.L1
+	sta vars_start,x
+	inx
+	cpx #vars_end-vars_start
+	bne L1
+
+	lda #OP_NOP
+	sta noise_opcode+0
+	
+	pla
+	sta pattern_ptr+1
+	pla
+	sta pattern_ptr+0
+
+	ldy #0
+	lda (pattern_ptr),y
+	iny
+	sta loop_ptr+0
+	lda (pattern_ptr),y
+	sta	loop_ptr+1
+	
+	lda pattern_ptr+0
+	clc
+	adc #2
+	sta pattern_ptr+0
+	bcc play_loop
+	inc pattern_ptr+1
+
+.play_loop
+
+	ldy #1
+	lda (pattern_ptr),y		;duration of the row (0=loop), bit 7 percussion
+	bne no_loop
+	
+.return_loop
+
+	lda loop_ptr+0
+	sta pattern_ptr+0
+	lda loop_ptr+1
+	sta pattern_ptr+1
+	jmp play_loop
+
+.no_loop
+
+	sta row_length
+	
+	dey
+	lda (pattern_ptr),y		;flags DDDN4321 (Drum, Noise, 1-4 channel update)
+	iny
+	iny
+	sta row_flags
+	
+	lsr row_flags
+	bcc skip_note_0
+	
+	lda (pattern_ptr),y
+	iny
+	sta ch0_add+0
+	lda (pattern_ptr),y
+	iny
+	sta ch0_add+1
+	
+.skip_note_0
+
+	lsr row_flags
+	bcc skip_note_1
+	
+	lda (pattern_ptr),y
+	iny
+	sta ch1_add+0
+	lda (pattern_ptr),y
+	iny
+	sta ch1_add+1
+	
+.skip_note_1
+
+	lsr row_flags
+	bcc skip_note_2
+	
+	lda (pattern_ptr),y
+	iny
+	sta ch2_add+0
+	lda (pattern_ptr),y
+	iny
+	sta ch2_add+1
+	
+.skip_note_2
+
+	lsr row_flags
+	bcc skip_note_3
+	
+	lda (pattern_ptr),y
+	iny
+	sta ch3_add+0
+	lda (pattern_ptr),y
+	iny
+	sta ch3_add+1
+	
+.skip_note_3
+
+	lsr row_flags
+	bcc skip_mode_change
+	
+	ldx #OP_NOP
+	lda (pattern_ptr),y
+	beq L2
+	ldx #OP_ROL_A
+.L2
+	stx noise_opcode+0
+	iny
+	iny
+	
+.skip_mode_change
+
+	lda row_flags
+	beq skip_drum
+
+	asl a
+	tax
+	lda sample_list+0-2,x
+	sta sample_ptr+0
+	lda sample_list+1-2,x
+	sta sample_ptr+1
+	lda #$80
+	sta sample_mask
+	
+.skip_drum
+
+	lda row_length
+	bpl skip_percussion
+	
+	and #$7f			;clear percussion flag
+	sta row_length
+
+	lda (pattern_ptr),y	;read noise volume
+	iny
+	sta noise_volume
+	
+	lda (pattern_ptr),y	;read noise pitch
+	iny
+	sta noise_div
+	sta noise_pitch
+
+	tya
+	pha
+	
+	lda #<2174			;utz's rand seed
+	sta noise_add+0
+	sta noise_acc+0
+	lda #>2174
+	sta noise_add+1
+	sta noise_acc+1
+	
+	ldx #<(200*64*2/95)	;noise duration, takes as long as inner sound loop
+	lda #>(200*64*2/95)
+	sta noise_cnt
+	
+.noise_loop
+
+	dec noise_div		;5
+	beq noise_update	;2/3
+
+.noise_skip
+
+	FOR n, 0, 13		;28
+		nop
+	NEXT
+	lda 0				;3
+	jmp noise_next		;3
+	
+.noise_update
+
+	lda noise_acc+0	    ;3
+	adc noise_add+0	    ;3
+	sta noise_acc+0	    ;3
+	lda noise_acc+1	    ;3
+	adc noise_add+1	    ;3
+	cmp #$80			;2
+	rol a				;2
+	sta noise_acc+1	    ;3
+	inc noise_add+1	    ;5
+	lda noise_pitch 	;3
+	sta noise_div		;3
+	
+.noise_next
+
+	lda noise_acc+1	    ;3
+
+IF DEBUG    
+    jsr COLOR4
+ENDIF
+
+	cmp noise_volume	;3
+	bcc L4				;2/3
+	lda #$00			;2
+	jmp L5				;3
+.L4
+	lda #$ff			;2
+	nop					;2 dummy
+.L5
+    jsr CONSOL          ;6	output sound bit (21 Inner)
+
+	txa					;2
+	bne L6				;2/3
+	lda noise_cnt		;3
+	beq noise_done		;2/3
+	dec noise_cnt		;5
+.L6
+
+IF NTSC
+	nop					;2	to make pitch AND speed match between PAL/NTSC
+ENDIF
+
+	dex					;2
+	jmp noise_loop		;3=95t
+	
+.noise_done
+
+	pla
+	tay
+
+
+.skip_percussion
+
+	tya
+	clc
+	adc pattern_ptr+0
+	sta pattern_ptr+0
+	bcc L7
+	inc pattern_ptr+1
+.L7
+
+	lda sample_mask
+	sta sample_bit
+
+.sound_loop_0
+
+	ldx #64				;internal loop runs 64 times
+	ldy #0				;sample ptr inside the loop
+	
+.sound_loop
+	
+	lda (sample_ptr),y	;5+
+	and sample_bit		;3
+	beq L8				;2/3
+	lda #$ff			;2
+	jmp L9				;3
+.L8
+	nop					;2
+	nop					;2
+.L9
+	sta sample_out		;3
+;18
+	lsr sample_bit		;5
+	beq sample_inc		;2/3
+
+	lda 0				;3 dummy
+	lda 0				;3 dummy
+	jmp sample_next		;3
+
+.sample_inc
+
+	lda sample_mask		;3
+	sta sample_bit		;3
+	iny					;2
+
+.sample_next
+
+	lda #0				;2
+	sta ch_mixer		;3
+	
+;39
+	lda ch0_acc+0		;3
+	clc					;2
+	adc ch0_add+0		;3
+	sta ch0_acc+0		;3
+	lda ch0_acc+1		;3
+	adc ch0_add+1		;3
+	rol ch_mixer		;5
+	sta ch0_acc+1		;3
+	
+	lda ch1_acc+0		;3
+	clc					;2
+	adc ch1_add+0		;3
+	sta ch1_acc+0		;3
+	lda ch1_acc+1		;3
+	adc ch1_add+1		;3
+	rol ch_mixer		;5
+	sta ch1_acc+1		;3
+	
+	lda ch2_acc+0		;3
+	clc					;2
+	adc ch2_add+0		;3
+	sta ch2_acc+0		;3
+	lda ch2_acc+1		;3
+	adc ch2_add+1		;3
+	rol ch_mixer		;5
+	sta ch2_acc+1		;3
+
+	lda ch3_acc+0		;3
+	clc					;2
+	adc ch3_add+0		;3
+	sta ch3_acc+0		;3
+	lda ch3_acc+1		;3
+	adc ch3_add+1		;3
+	rol ch_mixer		;5
+	cmp #$80			;2 needed for rol a, to match Z80's srl h
+
+.noise_opcode
+	NOP                 ;2 nop or rol a, self-modifying code here!
+	sta ch3_acc+1		;3
+	
+
+;141
+
+	lda ch_acc			;3
+	clc					;2
+	adc ch_mixer		;3
+	bne L10				;2/3
+	dec temp			;5 dummy
+	jmp L11				;3
+.L10
+	adc #$ff			;2
+	sta ch_acc			;3
+	lda #$ff			;2
+.L11
+
+	ora sample_out		;3
+
+IF DEBUG    
+    jsr COLOR4
+ENDIF
+
+    JSR CONSOL          ;6	output sound bit (21 - Inner)
+
+IF NTSC
+	nop					;2	to make pitch and speed match between PAL/NTSC
+ENDIF
+
+	dex					;2
+	bne sound_loop		;2/3=200t
+	
+	dey					;last byte of a 64/8 byte sample packet is #80 means it was the last packet
+	lda (sample_ptr),y
+	cmp #$80
+	bne sample_no_stop
+	
+	lda #0				;disable sample reading
+	sta sample_mask
+
+.sample_no_stop
+
+	iny
+	tya
+	clc
+	adc sample_ptr+0
+	sta sample_ptr+0
+	bcc L14
+	inc sample_ptr+1
+.L14
+
+	dec row_length
+	beq L15
+	jmp sound_loop_0
+.L15
+	jmp play_loop
+
+.cursorOff
+    LDA #16
+    STA &D0
+
+    RTS
+
+.changeScreenMode
+    LDA #22
+    JSR OSWRCH
+    TXA
+	JMP OSWRCH
+
+.CONSOL
+	pha                     ;3
+    beq L12                 ;2/3
+    lda speaker_on          ;2
+    jmp L13                 ;3
+.L12
+    lda speaker_off         ;2
+.L13
+    sta SHEILA_MISC_CONTROL ;4
+
+	pla                     ;4
+    rts                     ;6
+
+.COLOR4
+	pha
+	beq		L16
+	lda 	#$0f
+  	sta 	$fe08
+  	sta 	$fe09
+	jmp		L17
+.L16
+	lda 	#$ff
+  	sta 	$fe08
+  	sta 	$fe09
+.L17
+	pla
+	rts
+
+.sample_list
+
+	equw 	sample_1
+	equw 	sample_2
+	equw 	sample_3
+	equw 	sample_4
+	equw 	sample_5
+	equw 	sample_6
+	equw 	sample_7
+
+	INCLUDE "tracks\high_orbit.track.6502"
+
+.end
+
+SAVE "MAIN",start,end
+
+\ ******************************************************************
+\ *	Memory Info
+\ ******************************************************************
+
+PRINT "-----------------------"
+PRINT "  1-BIT SQUATM PLAYER  "
+PRINT "-----------------------"
+PRINT "CODE size       = ", ~end-start
+PRINT "-----------------------"
+PRINT "HIGH WATERMARK  = ", ~P%
+PRINT "FREE            = ", ~start+end
+PRINT "-----------------------"
+
+\ ******************************************************************
+\ * Supporting Files
+\ ******************************************************************
+
+PUTBASIC "loader.bas","LOADER"
+PUTFILE  "screens\title.bin","TITLE",&5800
+PUTFILE  "BOOT","!BOOT",&FFFF
