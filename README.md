@@ -5,13 +5,13 @@
 - Ported to Atari 8-bit by Shiru 07'21
 - Ported to the Acorn Electron by Negative Charge 11'22
 
-The track currently needs to be included at the bottom of main.s (samples are in the tracks directory)
+The track currently needs to be included at the bottom of main.6502 (samples are in the tracks directory)
 
 SquatM tracks can be composed in 1Tracker (https://shiru.untergrund.net/software.shtml) - you will need to export the track in Atari ca65 format, and manually convert to BeebAsm format (see samples for changes required).
 
 The call to turn the speaker on/off is quite wasteful at the moment and still needs optimizing.
 
-SSD file for emulators/hardware: https://github.com/NegativeCharge/ca65-SquatM-Player/blob/master/SquatM_Beeper_Engine.ssd?raw=true
+SSD file for emulators/hardware: https://github.com/NegativeCharge/Acorn-Electron-SquatM-Player/blob/master/SquatM_Beeper_Engine.ssd?raw=true
 
 
 Release Notes:
