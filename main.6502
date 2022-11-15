@@ -535,7 +535,7 @@ ENDIF
 	equw 	sample_6
 	equw 	sample_7
 
-	INCLUDE "tracks\h0ffman.track.6502"
+	INCLUDE "tracks\lets_go.track.6502"
 
 .end
 
