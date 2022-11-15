@@ -286,8 +286,8 @@ GUARD   &5800
 	sta noise_add+1
 	sta noise_acc+1
 	
-	ldx #<(200*64*2/95)	;noise duration, takes as long as inner sound loop
-	lda #>(200*64*2/95)
+	ldx #<(193*64*2/88)	;noise duration, takes as long as inner sound loop
+	lda #>(193*64*2/88)
 	sta noise_cnt
 	
 .noise_loop
@@ -347,7 +347,7 @@ IF NTSC
 ENDIF
 
 	dex					;2
-	jmp noise_loop		;3=95t
+	jmp noise_loop		;3=88t
 	
 .noise_done
 
@@ -445,7 +445,6 @@ ENDIF
 	NOP                 ;2 nop or rol a, self-modifying code here!
 	sta ch3_acc+1		;3
 	
-
 ;141
 
 	lda ch_acc			;3
@@ -466,14 +465,14 @@ IF DEBUG
     jsr COLOR4
 ENDIF
 
-    JSR CONSOL          ;6	output sound bit (21 - Inner)
+    JSR CONSOL          ;6	output sound bit (14 - Inner)
 
 IF NTSC
 	nop					;2	to make pitch and speed match between PAL/NTSC
 ENDIF
 
 	dex					;2
-	bne sound_loop		;2/3=200t
+	bne sound_loop		;2/3=193t
 	
 	dey					;last byte of a 64/8 byte sample packet is #80 means it was the last packet
 	lda (sample_ptr),y
@@ -501,7 +500,6 @@ ENDIF
 	jmp play_loop
 
 .CONSOL
-	pha                     ;3
     beq L12                 ;2/3
     lda speaker_on          ;2
     jmp L13                 ;3
@@ -510,7 +508,6 @@ ENDIF
 .L13
     sta SHEILA_MISC_CONTROL ;4
 
-	pla                     ;4
     rts                     ;6
 
 .COLOR4
