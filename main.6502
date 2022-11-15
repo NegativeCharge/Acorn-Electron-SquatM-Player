@@ -286,8 +286,8 @@ GUARD   &5800
 	sta noise_add+1
 	sta noise_acc+1
 	
-	ldx #<(193*64*2/88)	;noise duration, takes as long as inner sound loop
-	lda #>(193*64*2/88)
+	ldx #<(193*64*2/81)	;noise duration, takes as long as inner sound loop
+	lda #>(193*64*2/81)
 	sta noise_cnt
 	
 .noise_loop
@@ -347,7 +347,7 @@ IF NTSC
 ENDIF
 
 	dex					;2
-	jmp noise_loop		;3=88t
+	jmp noise_loop		;3=95t
 	
 .noise_done
 
@@ -378,7 +378,7 @@ ENDIF
 	lda (sample_ptr),y	;5+
 	and sample_bit		;3
 	beq L8				;2/3
-	lda #$ff			;2
+	lda #$0f			;2
 	jmp L9				;3
 .L8
 	nop					;2
@@ -456,7 +456,7 @@ ENDIF
 .L10
 	adc #$ff			;2
 	sta ch_acc			;3
-	lda #$ff			;2
+	lda #$0f			;2
 .L11
 
 	ora sample_out		;3
@@ -505,6 +505,8 @@ ENDIF
     jmp L13                 ;3
 .L12
     lda speaker_off         ;2
+	nop						;2 - dummy
+	nop						;2 - dummy
 .L13
     sta SHEILA_MISC_CONTROL ;4
 
