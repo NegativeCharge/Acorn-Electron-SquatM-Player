@@ -13,7 +13,6 @@ OSWRCH					= &FFEE
 
 DEBUG                   = FALSE
 NTSC                    = FALSE
-HALF_RESOLUTION			= TRUE
 
 OP_NOP                  = &EA
 OP_ROL_A                = &2A
@@ -26,6 +25,7 @@ GUARD   &9F
 .speaker_on                             SKIP 1
 .speaker_off                            SKIP 1
 .ula_control_register_previous_value    SKIP 1
+.cycles									SKIP 1
 
 .vars_start
 .loop_ptr		SKIP 2
@@ -71,6 +71,25 @@ MACRO CONSOL
 .L13
     sta SHEILA_MISC_CONTROL ;4
 ENDMACRO
+
+;MASTER RAM BOARD mode can be read using OSBYTE &EF or may be read
+; directly from location &27F as follows :
+;  00 = Normal
+;  01 = TURBO
+;  80 = 64K
+;
+;  NOTE that with the Acorn MOS this location is always 00
+	lda $27F
+	cmp #1
+	bne normal
+	lda #OP_NOP
+	sta cycle_opcode+0
+	lda #64
+	jmp continue
+.normal
+	lda #32
+.continue
+	sta cycles
 
 	lda 	#143
 	ldx 	#12
@@ -295,13 +314,8 @@ ENDMACRO
 	sta noise_add+1
 	sta noise_acc+1
 	
-IF HALF_RESOLUTION	
-	ldx #<(180*32*2/73)	;noise duration, takes as long as inner sound loop
-	lda #>(180*32*2/73)
-ELSE
-	ldx #<(180*64*2/73)	;noise duration, takes as long as inner sound loop
-	lda #>(180*64*2/73)
-ENDIF
+	ldx #<(180*cycles*2/73)	;noise duration, takes as long as inner sound loop
+	lda #>(180*cycles*2/73)
 
 	sta noise_cnt
 	
@@ -385,12 +399,7 @@ ENDIF
 
 .sound_loop_0
 
-IF HALF_RESOLUTION
-	ldx #32				;internal loop runs 32 times	
-ELSE
-	ldx #64				;internal loop runs 64 times
-ENDIF
-
+	ldx cycles				;internal loop runs 64 times
 	ldy #0				;sample ptr inside the loop
 	
 .sound_loop
@@ -411,9 +420,7 @@ ENDIF
 
 	lda 0				;3 dummy
 	lda 0				;3 dummy
-IF HALF_RESOLUTION
-	nop
-ENDIF
+
 	jmp sample_next		;3
 
 .sample_inc
@@ -421,9 +428,9 @@ ENDIF
 	lda sample_mask		;3
 	sta sample_bit		;3
 	iny					;2
-IF HALF_RESOLUTION
+
+.cycle_opcode
 	iny
-ENDIF
 
 .sample_next
 

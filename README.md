@@ -11,7 +11,7 @@ SquatM tracks can be composed in 1Tracker (https://shiru.untergrund.net/software
 
 SSD file for emulators/hardware: https://github.com/NegativeCharge/Acorn-Electron-SquatM-Player/blob/master/SquatM_Beeper_Engine.ssd?raw=true
 
-**NOTE:** No longer requires a Slogger Turbo Board or equivalent to be enabled.  This has been achieved by halving the resolution of the playback.  You can set it back to full resolution by updating the HALF_RESOLUTION flag to FALSE and recompiling the SSD.
+**NOTE:** This will work on an unexpanded Acorn Electron, but at half resolution.  If a Slogger/Jaffa Master RAM board is detected in turbo mode you will hear playback at full resolution.  (A Slogger/Elektuur turbo driver will not be auto-detected and will play at double speed without code modification.)
 
 
 Release Notes:
@@ -19,3 +19,4 @@ Release Notes:
 - v0.1 - Initial ca65 port
 - v0.2 - Fully converted to BeebAsm. Debug rasters now off by default as they waste cycles.
 - v0.3 - Implement half resolution (32 sound loop iterations instead of 64) by default.  Full resolution can be enabled by setting HALF_RESOLUTION flag to FALSE, but then requires a turbo board for playback.
+- v0.4 - Auto-detect Slogger/Jaffa Master RAM board in turbo mode. HALF_RESOLUTION flag removed.
