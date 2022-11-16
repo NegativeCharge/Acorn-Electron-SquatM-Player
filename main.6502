@@ -58,6 +58,20 @@ ORG 	&E00
 GUARD   &5800
 
 .start
+
+MACRO CONSOL
+    beq L12                 ;2/3
+    lda speaker_on          ;2
+    jmp L13                 ;3
+.L12
+    lda speaker_off         ;2
+	nop						;2 - dummy
+	nop						;2 - dummy
+.L13
+    sta SHEILA_MISC_CONTROL ;4
+ENDMACRO
+
+
 	cld
 
 	lda 	#143
@@ -286,8 +300,8 @@ GUARD   &5800
 	sta noise_add+1
 	sta noise_acc+1
 	
-	ldx #<(193*64*2/81)	;noise duration, takes as long as inner sound loop
-	lda #>(193*64*2/81)
+	ldx #<(180*64*2/73)	;noise duration, takes as long as inner sound loop
+	lda #>(180*64*2/73)
 	sta noise_cnt
 	
 .noise_loop
@@ -333,7 +347,7 @@ ENDIF
 	lda #$ff			;2
 	nop					;2 dummy
 .L5
-    jsr CONSOL          ;6	output sound bit (21 Inner)
+    CONSOL              ;12	output sound bit
 
 	txa					;2
 	bne L6				;2/3
@@ -347,7 +361,7 @@ IF NTSC
 ENDIF
 
 	dex					;2
-	jmp noise_loop		;3=95t
+	jmp noise_loop		;3=73t
 	
 .noise_done
 
@@ -458,21 +472,26 @@ ENDIF
 	sta ch_acc			;3
 	lda #$0f			;2
 .L11
-
 	ora sample_out		;3
 
 IF DEBUG    
     jsr COLOR4
 ENDIF
 
-    JSR CONSOL          ;6	output sound bit (14 - Inner)
+	jmp skipTrampoline  ;3
+
+.trampoline
+    jmp sound_loop      ;3
+
+.skipTrampoline
+    CONSOL              ;12	output sound bit
 
 IF NTSC
 	nop					;2	to make pitch and speed match between PAL/NTSC
 ENDIF
 
 	dex					;2
-	bne sound_loop		;2/3=193t
+	bne trampoline		;2/3=180t
 	
 	dey					;last byte of a 64/8 byte sample packet is #80 means it was the last packet
 	lda (sample_ptr),y
@@ -498,19 +517,6 @@ ENDIF
 	jmp sound_loop_0
 .L15
 	jmp play_loop
-
-.CONSOL
-    beq L12                 ;2/3
-    lda speaker_on          ;2
-    jmp L13                 ;3
-.L12
-    lda speaker_off         ;2
-	nop						;2 - dummy
-	nop						;2 - dummy
-.L13
-    sta SHEILA_MISC_CONTROL ;4
-
-    rts                     ;6
 
 .COLOR4
 	pha
