@@ -71,9 +71,6 @@ MACRO CONSOL
     sta SHEILA_MISC_CONTROL ;4
 ENDMACRO
 
-
-	cld
-
 	lda 	#143
 	ldx 	#12
 	ldy 	#$FF
@@ -109,7 +106,6 @@ ENDMACRO
 	lda     #$00
 	sta     SHEILA_COUNTER                                  ; Zero the ULA SHEILA counter (FE06), creating a toggle speaker (inaudible frequency)
 	ldx     #$00                                            ; Clear X
-	cli
 
 	; Clear the vsync interrupt by setting a bit.
 
@@ -133,8 +129,6 @@ ENDMACRO
     lda 	$f4
     ora 	#$10
     sta 	$fe05
-	
-	sei
 	
 	lda 	#LO(music_data)
 	ldx 	#HI(music_data)
