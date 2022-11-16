@@ -9,14 +9,13 @@ The track currently needs to be included at the bottom of main.6502 (samples are
 
 SquatM tracks can be composed in 1Tracker (https://shiru.untergrund.net/software.shtml) - you will need to export the track in Atari ca65 format, and manually convert to BeebAsm format (see samples for changes required).
 
-The call to turn the speaker on/off is quite wasteful at the moment and still needs optimizing.
-
 SSD file for emulators/hardware: https://github.com/NegativeCharge/Acorn-Electron-SquatM-Player/blob/master/SquatM_Beeper_Engine.ssd?raw=true
 
-**NOTE:** Requires a Slogger Turbo Board or equivalent to be enabled.
+**NOTE:** No longer requires a Slogger Turbo Board or equivalent to be enabled.  This has been achieved by halving the resolution of the playback.  You can set it back to full resolution by updating the HALF_RESOLUTION flag to FALSE and recompiling the SSD.
 
 
 Release Notes:
 
 - v0.1 - Initial ca65 port
 - v0.2 - Fully converted to BeebAsm. Debug rasters now off by default as they waste cycles.
+- v0.3 - Implement half resolution (32 sound loop iterations instead of 64) by default.  Full resolution can be enabled by setting HALF_RESOLUTION flag to FALSE, but then requires a turbo board for playback.
