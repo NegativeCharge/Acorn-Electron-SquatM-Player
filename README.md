@@ -20,3 +20,4 @@ Release Notes:
 - v0.2 - Fully converted to BeebAsm. Debug rasters now off by default as they waste cycles.
 - v0.3 - Implement half resolution (32 sound loop iterations instead of 64) by default.  Full resolution can be enabled by setting HALF_RESOLUTION flag to FALSE, but then requires a turbo board for playback.
 - v0.4 - Auto-detect Slogger/Jaffa Master RAM board in turbo mode. HALF_RESOLUTION flag removed.
+- v0.5 - Cycle optimization to sound loop by @0xC0DE6502
