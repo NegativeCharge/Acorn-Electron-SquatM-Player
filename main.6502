@@ -11,9 +11,6 @@ SHEILA_MISC_CONTROL     = &FE07
 OSBYTE                  = &FFF4
 OSWRCH					= &FFEE
 
-DEBUG                   = FALSE
-NTSC                    = FALSE
-
 OP_NOP                  = &EA
 OP_ROL_A                = &2A
 
@@ -73,12 +70,13 @@ MACRO CONSOL
 ENDMACRO
 
 ;MASTER RAM BOARD mode can be read using OSBYTE &EF or may be read
-; directly from location &27F as follows :
+;directly from location &27F as follows :
 ;  00 = Normal
 ;  01 = TURBO
 ;  80 = 64K
 ;
 ;  NOTE that with the Acorn MOS this location is always 00
+
 	lda $27F
 	cmp #1
 	bne normal
@@ -314,9 +312,16 @@ ENDMACRO
 	sta noise_add+1
 	sta noise_acc+1
 	
-	ldx #<(180*cycles*2/73)	;noise duration, takes as long as inner sound loop
-	lda #>(180*cycles*2/73)
-
+	lda cycles
+	cmp #64
+	bne cl1
+	ldx #<(180*64*2/63)	;noise duration, takes as long as inner sound loop
+	lda #>(180*64*2/63)
+	jmp cl2
+.cl1
+	ldx #<(180*32*2/63)	;noise duration, takes as long as inner sound loop
+	lda #>(180*32*2/63)
+.cl2
 	sta noise_cnt
 	
 .noise_loop
@@ -348,21 +353,12 @@ ENDMACRO
 	
 .noise_next
 
-	lda noise_acc+1	    ;3
-
-IF DEBUG    
-    jsr COLOR4
-ENDIF
-
-	cmp noise_volume	;3
-	bcc L4				;2/3
-	lda #$00			;2
-	jmp L5				;3
-.L4
-	lda #$ff			;2
-	nop					;2 dummy
-.L5
-    CONSOL              ;12	output sound bit
+	lda speaker_off			;2
+	ldy noise_volume		;3
+	cpy noise_acc+1			;3 C=0 --> sound off, C=1 --> sound on
+	adc #0					;2
+	sta SHEILA_MISC_CONTROL ;4
+	; 14 cycles
 
 	txa					;2
 	bne L6				;2/3
@@ -370,19 +366,13 @@ ENDIF
 	beq noise_done		;2/3
 	dec noise_cnt		;5
 .L6
-
-IF NTSC
-	nop					;2	to make pitch AND speed match between PAL/NTSC
-ENDIF
-
 	dex					;2
-	jmp noise_loop		;3=73t
+	jmp noise_loop		;3=63t
 	
 .noise_done
 
 	pla
 	tay
-
 
 .skip_percussion
 
@@ -399,7 +389,7 @@ ENDIF
 
 .sound_loop_0
 
-	ldx cycles				;internal loop runs 64 times
+	ldx cycles			;internal loop runs 64 times
 	ldy #0				;sample ptr inside the loop
 	
 .sound_loop
@@ -492,22 +482,14 @@ ENDIF
 	lda #$0f			;2
 .L11
 	ora sample_out		;3
-
-IF DEBUG    
-    jsr COLOR4
-ENDIF
-
 	jmp skipTrampoline  ;3
 
 .trampoline
     jmp sound_loop      ;3
 
 .skipTrampoline
-    CONSOL              ;12	output sound bit
 
-IF NTSC
-	nop					;2	to make pitch and speed match between PAL/NTSC
-ENDIF
+    CONSOL              ;12	output sound bit
 
 	dex					;2
 	bne trampoline		;2/3=180t
@@ -536,21 +518,6 @@ ENDIF
 	jmp sound_loop_0
 .L15
 	jmp play_loop
-
-.COLOR4
-	pha
-	beq		L16
-	lda 	#$0f
-  	sta 	$fe08
-  	sta 	$fe09
-	jmp		L17
-.L16
-	lda 	#$ff
-  	sta 	$fe08
-  	sta 	$fe09
-.L17
-	pla
-	rts
 
 .sample_list
 
