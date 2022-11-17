@@ -11,8 +11,8 @@ SHEILA_MISC_CONTROL     = &FE07
 OSBYTE                  = &FFF4
 OSWRCH                  = &FFEE
 
-SPEAKER_OFF				= %10101001
-SPEAKER_ON				= %10101010
+SPEAKER_OFF             = %10101001
+SPEAKER_ON              = %10101010
 
 OP_NOP                  = &EA
 OP_ROL_A                = &2A
@@ -302,12 +302,12 @@ GUARD   &5800
     lda     cycles
     cmp     #64
     bne     L5
-    ldx     #<(178*64*2/62)        ;noise duration, takes as long as inner sound loop
-    lda     #>(178*64*2/62)
+    ldx     #<(172*64*2/62)        ;noise duration, takes as long as inner sound loop
+    lda     #>(172*64*2/62)
     jmp     L6
 .L5
-    ldx     #<(178*32*2/62)        ;noise duration, takes as long as inner sound loop
-    lda     #>(178*32*2/62)
+    ldx     #<(172*32*2/62)        ;noise duration, takes as long as inner sound loop
+    lda     #>(172*32*2/62)
 .L6
     sta     noise_cnt
     
@@ -398,8 +398,9 @@ GUARD   &5800
     lsr     sample_bit            ;5
     beq     sample_inc            ;2/3
 
-    lda     0                     ;3 dummy
-    lda     0                     ;3 dummy
+    nop                           ;2 dummy
+    nop                           ;2 dummy
+    nop                           ;2 dummy
 
     jmp     sample_next           ;3
 
@@ -472,18 +473,12 @@ GUARD   &5800
     lda     #$ff                  ;2
 .L12
     ora     sample_out            ;3
-    jmp     skipTrampoline        ;3
-
-.trampoline
-    jmp     sound_loop            ;3
-
-.skipTrampoline
     and     #1                    ;2
     adc     #SPEAKER_OFF          ;2
     sta     SHEILA_MISC_CONTROL   ;4 (11)
 
     dex                           ;2
-    bne     trampoline            ;2/3=178t
+    bne     sound_loop            ;2/3=172t
 ; ------------------------------------------------------------------------------------------------
 
     dey                           ;last byte of a 64/8 byte sample packet is #80 means it was the last packet
@@ -509,7 +504,7 @@ GUARD   &5800
     beq     L14
     jmp     sound_loop_0
 .L14
-    jmp		play_loop
+    jmp        play_loop
 
 .sample_list
 
