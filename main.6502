@@ -2,43 +2,40 @@
 ;Originally written by Shiru 06'17 for ZX Spectrum 48K
 ;Ported to Atari 8-bit by Shiru 07'21
 ;Ported to the Acorn Electron by Negative Charge 11'22
+;Optimisations of the Acorn Electron version by 0xC0DE 11'22
 
-\ NOTE : Requires a turbo board (e.g. Slogger) for playback at correct speed
-
-\ Constants
 SHEILA_COUNTER          = &FE06
 SHEILA_MISC_CONTROL     = &FE07
-OSBYTE                  = &FFF4
-OSWRCH                  = &FFEE
 
-SPEAKER_OFF             = %10101001
-SPEAKER_ON              = %10101010
+SPEAKER_OFF             = %10110001 ; =SPEAKER_ON-1 (!)
+SPEAKER_ON              = %10110010
 
 OP_NOP                  = &EA
 OP_ROL_A                = &2A
 
-\ Zero Page
-ORG     &00
-GUARD   &9F
+HAS_SAMPLES=0
 
-.control_register_value                 SKIP 1
-.ula_control_register_previous_value    SKIP 1
-.cycles                                 SKIP 1
+if HAS_SAMPLES=1
+  TRACK=1
+  CYCLES=39 ; 39 calibrated with "let's go" track ~2m12
+else
+  TRACK=1 ; not used at the moment (only 1 track without samples)
+  CYCLES=51 ; 51 calibrated with "geostorm" track ~2m08
+endif
+
+ORG     &00
 
 .vars_start
 
-.loop_ptr                               SKIP 2
 .pattern_ptr                            SKIP 2
+if HAS_SAMPLES=1
 .sample_ptr                             SKIP 2
-.sample_mask                            SKIP 1        ;&00 or &ff
+.sample_mask                            SKIP 1        ;&00 or &80
 .sample_bit                             SKIP 1
 .sample_out                             SKIP 1
+endif
 .row_length                             SKIP 1
 .row_flags                              SKIP 1
-.ch0_add                                SKIP 2
-.ch1_add                                SKIP 2
-.ch2_add                                SKIP 2
-.ch3_add                                SKIP 2
 .ch0_acc                                SKIP 2
 .ch1_acc                                SKIP 2
 .ch2_acc                                SKIP 2
@@ -46,12 +43,12 @@ GUARD   &9F
 .ch_mixer                               SKIP 1
 .ch_acc                                 SKIP 1
 .noise_acc                              SKIP 2
-.noise_add                              SKIP 2
-.noise_cnt                              SKIP 1
-.noise_div                              SKIP 1
+.noise_add_hi                           SKIP 1
 .noise_pitch                            SKIP 1
 .noise_volume                           SKIP 1
 .temp                                   SKIP 1
+
+.tmp_y                                  skip 1
 
 .vars_end
 
@@ -60,153 +57,50 @@ GUARD   &5800
 
 .start
 
-    ; MASTER RAM BOARD mode can be read using OSBYTE &EF or may be read
-    ; directly from location &27F as follows :
-    ;
-    ;  00 = Normal
-    ;  01 = TURBO
-    ;  80 = 64K
-    ;
-    ;  NOTE that with the Acorn MOS this location is always 00
+    sei                                                     ; Disable interrupts
 
-    lda     $27F
-    cmp     #1
-    bne     normal
-    lda     #OP_NOP
-    sta     cycle_opcode+0
-    lda     #64
-    jmp     continue
-.normal
-    lda     #32
-.continue
-    sta     cycles
-
-    lda     #143
-    ldx     #12
-    ldy     #$FF
-    jsr     OSBYTE                                          ; Claim NMI
-
-    lda     #$40
-    sta     $D00                                            ; Store RTI as NMI routine
-
-    lda     #163
-    ldx     #128
-    ldy     #1
-    jsr     OSBYTE                                          ; Disable printer and ADCs
-
-    lda     #0
-    sta     $2B2                                            ; Clear type byte for ROM 12 (Plus 1) in Paged ROM type table
-
-    lda     #$0F                                            ; Flush selected wait class
-    ldx     #$00                                            ; All waits flushed
-    jsr     OSBYTE
-
-    sei                                                     ; Set interrupt disable
-    lda     #$F2                                            ; Read RAM copy of location &FE07 (ULA SHEILA Misc. Control)
-    ldx     #$00
-    ldy     #$FF
-    jsr     OSBYTE                                          ; Old value returned in X
-
-    stx     ula_control_register_previous_value             ; Store old value
     lda     #$00
     sta     SHEILA_COUNTER                                  ; Zero the ULA SHEILA counter (FE06), creating a toggle speaker (inaudible frequency)
-    ldx     #$00                                            ; Clear X
-
-    ; Clear the vsync interrupt by setting a bit.
-
-    lda     $f4
-    ora     #$10
-    sta     $fe05
-
-    ; Wait until the vsync bit is cleared.
-
-    lda     #$04
-.L1
-    bit     $fe00
-    bne     L1
-
-    ; Wait until the vsync bit is set, indicating the start of a new frame.
-
-.L2
-    bit     $fe00
-    beq     L2
-
-    lda     $f4
-    ora     #$10
-    sta     $fe05
-    
-    lda     #LO(music_data)
-    ldx     #HI(music_data)
-
-.play
-
-    pha
-    txa
-    pha
-    
-    lda     #0
     tax
-.L3
+.clear_vars
     sta     vars_start,x
     inx
     cpx     #vars_end-vars_start
-    bne     L3
+    bne     clear_vars
 
-    lda     #OP_NOP
-    sta     noise_opcode+0
-    
-    pla
+    lda     #LO(music_data+2)
+    sta     pattern_ptr+0
+    lda     #HI(music_data+2)
     sta     pattern_ptr+1
-    pla
-    sta     pattern_ptr+0
+    bne     play_loop ; jump always
 
-    ldy     #0
-    lda     (pattern_ptr),y
-    iny
-    sta     loop_ptr+0
-    lda     (pattern_ptr),y
-    sta     loop_ptr+1
-    
-    lda     pattern_ptr+0
-    clc
-    adc     #2
+.return_loop
+    lda     music_data+0
     sta     pattern_ptr+0
-    bcc     play_loop
-    inc     pattern_ptr+1
+    lda     music_data+1
+    sta     pattern_ptr+1
 
 .play_loop
 
-    ldy     #1
-    lda     (pattern_ptr),y            ;duration of the row (0=loop), bit 7 percussion
-    bne     no_loop
-    
-.return_loop
-
-    lda     loop_ptr+0
-    sta     pattern_ptr+0
-    lda     loop_ptr+1
-    sta     pattern_ptr+1
-    jmp     play_loop
-
-.no_loop
-
-    sta     row_length
-    
-    dey
+    ldy     #0
     lda     (pattern_ptr),y            ;flags DDDN4321 (Drum, Noise, 1-4 channel update)
-    iny
-    iny
     sta     row_flags
+    iny
+    lda     (pattern_ptr),y            ;duration of the row (0=loop), bit 7 percussion
+    beq     return_loop
+    
+    sta     row_length
+    iny
     
     lsr     row_flags
     bcc     skip_note_0
     
     lda     (pattern_ptr),y
     iny
-    sta     ch0_add+0
+    sta     sm_ch0_add0+1
     lda     (pattern_ptr),y
     iny
-    sta     ch0_add+1
+    sta     sm_ch0_add1+1
     
 .skip_note_0
 
@@ -215,11 +109,11 @@ GUARD   &5800
     
     lda     (pattern_ptr),y
     iny
-    sta     ch1_add+0
+    sta     sm_ch1_add0+1
     lda     (pattern_ptr),y
     iny
-    sta     ch1_add+1
-    
+    sta     sm_ch1_add1+1
+
 .skip_note_1
 
     lsr     row_flags
@@ -227,11 +121,11 @@ GUARD   &5800
     
     lda     (pattern_ptr),y
     iny
-    sta     ch2_add+0
+    sta     sm_ch2_add0+1
     lda     (pattern_ptr),y
     iny
-    sta     ch2_add+1
-    
+    sta     sm_ch2_add1+1
+
 .skip_note_2
 
     lsr     row_flags
@@ -239,16 +133,16 @@ GUARD   &5800
     
     lda     (pattern_ptr),y
     iny
-    sta     ch3_add+0
+    sta     sm_ch3_add0+1
     lda     (pattern_ptr),y
     iny
-    sta     ch3_add+1
-    
+    sta     sm_ch3_add1+1
+
 .skip_note_3
 
     lsr     row_flags
     bcc     skip_mode_change
-    
+
     ldx     #OP_NOP
     lda     (pattern_ptr),y
     beq     L4
@@ -260,18 +154,18 @@ GUARD   &5800
     
 .skip_mode_change
 
-    lda     row_flags
+    ldx     row_flags
     beq     skip_drum
 
-    asl     a
-    tax
-    lda     sample_list+0-2,x
+if HAS_SAMPLES=1
+    lda     sample_list_lo-1,x
     sta     sample_ptr+0
-    lda     sample_list+1-2,x
+    lda     sample_list_hi-1,x
     sta     sample_ptr+1
     lda     #$80
     sta     sample_mask
-    
+endif
+
 .skip_drum
 
     lda     row_length
@@ -286,82 +180,73 @@ GUARD   &5800
     
     lda     (pattern_ptr),y        ;read noise pitch
     iny
-    sta     noise_div
-    sta     noise_pitch
 
-    tya
-    pha
+    sty     tmp_y
+
+    sta     noise_pitch
+    tay     ; used to be noise_div
     
     lda     #<2174                 ;utz's rand seed
-    sta     noise_add+0
     sta     noise_acc+0
     lda     #>2174
-    sta     noise_add+1
+    sta     noise_add_hi
     sta     noise_acc+1
     
-    lda     cycles
-    cmp     #64
-    bne     L5
-    ldx     #<(172*64*2/62)        ;noise duration, takes as long as inner sound loop
-    lda     #>(172*64*2/62)
-    jmp     L6
-.L5
-    ldx     #<(172*32*2/62)        ;noise duration, takes as long as inner sound loop
-    lda     #>(172*32*2/62)
-.L6
-    sta     noise_cnt
-    
-; --62t-------------------------------------------------------------------------------------------
+  if HAS_SAMPLES=1
+    COUNT=((120+37)*2*CYCLES)/56 ; 56c noise_loop, 120+37=157c sound_loop // noise duration, twice as long as inner sound loop
+  else
+    COUNT=(120*2*CYCLES)/56 ; 56c noise_loop, 120c sound_loop
+  endif
+  if COUNT>255
+    error "COUNT>255!"
+  endif
+  ldx       #COUNT
+
+; -- 37+14+5 = 56c -------------------------------------------------------------------------------------------
 .noise_loop
 
-    dec     noise_div              ;5
+    dey                            ;2
     beq     noise_update           ;2/3
+    ;~5
 
 .noise_skip
 
-    FOR n, 0, 13                   ;2
-        nop
+    FOR n, 1, 6
+      rol temp                     ;5 dummy
     NEXT
-    lda     0                      ;3
     jmp     noise_next             ;3
+    ; 2+2+6*5+3 = 37c
     
 .noise_update
 
     lda     noise_acc+0            ;3
-    adc     noise_add+0            ;3
+    adc     #<2174                 ;2 // utz's rand seed
     sta     noise_acc+0            ;3
     lda     noise_acc+1            ;3
-    adc     noise_add+1            ;3
+    adc     noise_add_hi           ;3
     cmp     #$80                   ;2
     rol     a                      ;2
     sta     noise_acc+1            ;3
-    inc     noise_add+1            ;5
-    lda     noise_pitch            ;3
-    sta     noise_div              ;3
+    inc     noise_add_hi           ;5
+    ldy     noise_pitch            ;3
+    ;32c // 2+3+32 = 37c
     
 .noise_next
 
+    lda     noise_volume           ;3
+    cmp     noise_acc+1            ;3 C=0 --> sound off, C=1 --> sound on
     lda     #SPEAKER_OFF           ;2
-    ldy     noise_volume           ;3
-    cpy     noise_acc+1            ;3 C=0 --> sound off, C=1 --> sound on
     adc     #0                     ;2
     sta     SHEILA_MISC_CONTROL    ;4
+    ;14c
 
-    txa                            ;2
-    bne     L7                     ;2/3
-    lda     noise_cnt              ;3
-    beq     noise_done             ;2/3
-    dec     noise_cnt              ;5
-.L7
     dex                            ;2
-    jmp     noise_loop             ;3=62t
-    
+    bne     noise_loop             ;2/3
+    ;~5c
+
 ; ------------------------------------------------------------------------------------------------
 
-.noise_done
-
-    pla
-    tay
+    ldy     tmp_y
 
 .skip_percussion
 
@@ -373,172 +258,206 @@ GUARD   &5800
     inc     pattern_ptr+1
 .L8
 
+if HAS_SAMPLES=1
     lda     sample_mask
     sta     sample_bit
+endif
 
 .sound_loop_0
 
-    ldx     cycles                ;internal loop runs 64 times
+    ldx     #CYCLES
     ldy     #0                    ;sample ptr inside the loop
 
- ; --172t------------------------------------------------------------------------------------------  
+ ; -- (37c)+120c ------------------------------------------------------------------------------------------  
 .sound_loop
-    
-    lda     (sample_ptr),y        ;5+
-    and     sample_bit            ;3
-    beq     L9                    ;2/3
-    lda     #$ff                  ;2
-    jmp     L10                   ;3
-.L9
-    nop                           ;2
-    nop                           ;2
-.L10
+
+if HAS_SAMPLES=1
+
+    lda     (sample_ptr),y        ;5+ // it's okay if sample_ptr is not valid
+    and     sample_bit            ;3    
+    beq     spkr_off              ;2/3
+    lda     #SPEAKER_ON           ;2
+    bne     spkr_set              ;3 jump always
+.spkr_off
+    lda     #SPEAKER_OFF          ;2
+.spkr_set
     sta     sample_out            ;3
-;18
+    ;16
+
+    lda     sample_mask           ;3 preload
     lsr     sample_bit            ;5
+    lsr     sample_bit            ;5 // drop every other sample bit!
     beq     sample_inc            ;2/3
-
-    nop                           ;2 dummy
-    nop                           ;2 dummy
-    nop                           ;2 dummy
-
-    jmp     sample_next           ;3
-
+    sta     temp                  ;3 dummy
+    bne     sample_next           ;3 jump always
 .sample_inc
-
-    lda     sample_mask           ;3
     sta     sample_bit            ;3
     iny                           ;2
-
-.cycle_opcode
-    iny
-
 .sample_next
+    ;21
+
+    ;16+21=37
+endif
 
     lda     #0                    ;2
     sta     ch_mixer              ;3
-    
-;39
+    ;5
+
     lda     ch0_acc+0             ;3
-    clc                           ;2
-    adc     ch0_add+0             ;3
+.sm_ch0_add0
+    adc     #0                    ;2 selfmod
     sta     ch0_acc+0             ;3
     lda     ch0_acc+1             ;3
-    adc     ch0_add+1             ;3
+.sm_ch0_add1
+    adc     #0                    ;2 selfmod
     rol     ch_mixer              ;5
     sta     ch0_acc+1             ;3
+    ;21
     
     lda     ch1_acc+0             ;3
-    clc                           ;2
-    adc     ch1_add+0             ;3
+.sm_ch1_add0
+    adc     #0                    ;2 selfmod
     sta     ch1_acc+0             ;3
     lda     ch1_acc+1             ;3
-    adc     ch1_add+1             ;3
+.sm_ch1_add1
+    adc     #0                    ;2 selfmod
     rol     ch_mixer              ;5
     sta     ch1_acc+1             ;3
+    ;21
     
     lda     ch2_acc+0             ;3
-    clc                           ;2
-    adc     ch2_add+0             ;3
+.sm_ch2_add0
+    adc     #0                    ;2 selfmod
     sta     ch2_acc+0             ;3
     lda     ch2_acc+1             ;3
-    adc     ch2_add+1             ;3
+.sm_ch2_add1
+    adc     #0                    ;2 selfmod
     rol     ch_mixer              ;5
     sta     ch2_acc+1             ;3
+    ;21
 
     lda     ch3_acc+0             ;3
-    clc                           ;2
-    adc     ch3_add+0             ;3
+.sm_ch3_add0
+    adc     #0                    ;2 selfmod
     sta     ch3_acc+0             ;3
     lda     ch3_acc+1             ;3
-    adc     ch3_add+1             ;3
+.sm_ch3_add1
+    adc     #0                    ;2 selfmod
     rol     ch_mixer              ;5
     cmp     #$80                  ;2 needed for rol a, to match Z80's srl h
+    ;20
 
 .noise_opcode
     nop                           ;2 nop or rol a, self-modifying code here!
     sta     ch3_acc+1             ;3
+    ;5
     
-;143
+    ;(37)+5+21+21+21+20+5 = (37)+93
 
     lda     ch_acc                ;3
     clc                           ;2
     adc     ch_mixer              ;3
-    bne     L11                   ;2/3
-    dec     temp                  ;5 dummy
-    jmp     L12                   ;3
-.L11
+    bne     speaker_on            ;2/3
+if HAS_SAMPLES=1
+    nop                           ;2 dummy
+    lda     sample_out            ;3
+else
+    sta     temp                  ;3 dummy
+    lda     #SPEAKER_OFF          ;2
+endif
+    bne     set_speaker           ;3 jump always
+.speaker_on
     adc     #$ff                  ;2
     sta     ch_acc                ;3
-    lda     #$ff                  ;2
-.L12
-    ora     sample_out            ;3
-    and     #1                    ;2
-    adc     #SPEAKER_OFF          ;2
-    sta     SHEILA_MISC_CONTROL   ;4 (11)
+    lda     #SPEAKER_ON           ;2
+.set_speaker
+    sta     SHEILA_MISC_CONTROL   ;4
+    ;22
 
     dex                           ;2
-    bne     sound_loop            ;2/3=172t
+    bne     sound_loop            ;2/3
+    ;~5
+
+    ;(37)+93+22+5 = (37)+120
+
 ; ------------------------------------------------------------------------------------------------
 
-    dey                           ;last byte of a 64/8 byte sample packet is #80 means it was the last packet
-    lda     (sample_ptr),y
-    cmp     #$80
+if HAS_SAMPLES=1
+
+    dey
+    lda     (sample_ptr),y        ; it's okay if sample_ptr is not valid
+    cmp     #EOS
     bne     sample_no_stop
-    
+
     lda     #0                    ;disable sample reading
     sta     sample_mask
 
 .sample_no_stop
 
-    iny
     tya
-    clc
+    sec                           ; (!)
     adc     sample_ptr+0
     sta     sample_ptr+0
     bcc     L13
     inc     sample_ptr+1
 .L13
+endif
 
     dec     row_length
+if HAS_SAMPLES=1
     beq     L14
     jmp     sound_loop_0
 .L14
-    jmp        play_loop
+else
+    bne     sound_loop_0
+endif
+    jmp     play_loop
 
-.sample_list
+if HAS_SAMPLES=1
+.sample_list_lo
+    equb    lo(sample_1)
+    equb    lo(sample_2)
+    equb    lo(sample_3)
+    equb    lo(sample_4)
+    equb    lo(sample_5)
+    equb    lo(sample_6)
+    equb    lo(sample_7)
 
-    equw    sample_1
-    equw    sample_2
-    equw    sample_3
-    equw    sample_4
-    equw    sample_5
-    equw    sample_6
-    equw    sample_7
+.sample_list_hi
+    equb    hi(sample_1)
+    equb    hi(sample_2)
+    equb    hi(sample_3)
+    equb    hi(sample_4)
+    equb    hi(sample_5)
+    equb    hi(sample_6)
+    equb    hi(sample_7)
+endif
 
-    INCLUDE "tracks\lets_go.track.6502"
+if HAS_SAMPLES=1
+  ; end of sample marker (EOS)
+  ; any combination of bit6/4/2/0 that is NOT a sample value in the track
+
+  if TRACK=1   
+    EOS=%00010101
+    INCLUDE "tracks\lets_go.track.6502" ; has samples
+  elif TRACK=2
+    EOS=%00010101
+    INCLUDE "tracks\high_orbit.track.6502" ; has samples (plays too fast?)
+  elif TRACK=3
+    EOS=%00010101
+    INCLUDE "tracks\dj.h0ffman.squat_party.track.6502" ; has samples
+  else
+    error "No track selected!"
+  endif
+
+else
+
+    INCLUDE "tracks\geostorm.track.6502" ; no samples (no EOS needed)
+
+endif
 
 .end
 
-SAVE "MAIN",start,end
-
-\ ******************************************************************
-\ *    Memory Info
-\ ******************************************************************
-
-PRINT "-----------------------"
-PRINT "  1-BIT SQUATM PLAYER  "
-PRINT "-----------------------"
-PRINT "CODE size       = ", ~end-start
-PRINT "-----------------------"
-PRINT "HIGH WATERMARK  = ", ~P%
-PRINT "FREE            = ", ~start+end
-PRINT "-----------------------"
-
-\ ******************************************************************
-\ * Supporting Files
-\ ******************************************************************
-
-PUTBASIC "loader.bas","LOADER"
-PUTFILE  "screens\title.bin","TITLE",&5800
-PUTFILE  "BOOT","!BOOT",&FFFF
+SAVE "SQUATM",start,end
+PUTBASIC "LOADER.txt","LOADER"
+PUTFILE  "!BOOT.txt","!BOOT",0,0

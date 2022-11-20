@@ -3,7 +3,9 @@
 .sample_1
 	equb 0,0,8,79,255,255,242,0
 	equb 0,0,0,0,31,255,255,255
-	equb 255,255,255,232,0,0,0,128
+	equb 255,255,255,232,0,0,0,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
 .sample_2
 	equb 0,0,0,0,0,0,31,255
 	equb 249,64,0,0,7,255,255,0
@@ -12,13 +14,19 @@
 	equb 255,247,224,0,0,0,223,255
 	equb 224,0,0,38,207,255,224,0
 	equb 0,1,247,251,143,253,192,0
-	equb 0,15,255,191,208,0,0,128
+	equb 0,15,255,191,208,0,0,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
 .sample_3
-	equb 35,105,159,243,210,148,228,128
+	equb 35,105,159,243,210,148,228,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
 .sample_4
 	equb 128,128,60,1,224,15,0,240
 	equb 7,128,28,1,192,30,0,32
-	equb 3,0,8,0,0,0,0,128
+	equb 3,0,8,0,0,0,0,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
 .sample_5
 	equb 0,84,45,120,1,254,128,191
 	equb 224,3,248,0,255,0,47,232
@@ -35,7 +43,9 @@
 	equb 0,0,0,0,0,0,0,0
 	equb 0,0,0,0,0,0,0,0
 	equb 0,0,0,0,0,0,0,0
-	equb 0,0,0,0,0,0,0,128
+	equb 0,0,0,0,0,0,0,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
 .sample_6
 	equb 0,0,0,0,0,0,0,0
 	equb 0,0,0,0,0,0,6,0
@@ -100,7 +110,9 @@
 	equb 0,0,0,0,0,0,0,0
 	equb 0,0,0,0,0,0,0,0
 	equb 0,0,0,0,0,0,0,0
-	equb 0,0,0,0,0,0,0,128
+	equb 0,0,0,0,0,0,0,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
 .sample_7
 	equb 0,0,0,0,0,0,39,248
 	equb 0,0,0,0,0,0,0,0
@@ -165,7 +177,9 @@
 	equb 0,0,0,0,0,0,0,0
 	equb 0,0,0,0,0,0,0,0
 	equb 0,0,0,0,0,0,0,0
-	equb 0,0,0,0,0,0,0,128
+	equb 0,0,0,0,0,0,0,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
+  equb EOS,EOS,EOS,EOS,EOS,EOS,EOS,EOS
 
 ;compiled music data
 .music_data
