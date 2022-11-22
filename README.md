@@ -6,8 +6,6 @@
 - Ported to the Acorn Electron by Negative Charge 11'22
 - Optimisations of the Acorn Electron version by 0xC0DE 11'22
 
-The track currently needs to be included at the bottom of main.6502 (samples are in the tracks directory)
-
 SquatM tracks can be composed in 1Tracker (https://shiru.untergrund.net/software.shtml) - you will need to export the track in Atari ca65 format, and manually convert to BeebAsm format (see samples for changes required).
 
 SSD file for emulators/hardware: https://github.com/NegativeCharge/Acorn-Electron-SquatM-Player/blob/master/SquatM_Beeper_Engine.ssd?raw=true
@@ -20,3 +18,4 @@ Release Notes:
 - v0.4 - Auto-detect Slogger/Jaffa Master RAM board in turbo mode. HALF_RESOLUTION flag removed.
 - v0.5 - Cycle optimisation to sound loop by @0xC0DE6502.
 - v0.6 - Further optimisation by @0xC0DE6502, negating the need for a turbo board.
+- v0.7 - Initial implementation of dynamic loading of track and sample data
