@@ -1,0 +1,83 @@
+.loadFile
+
+	\\ Set osfile param block
+	lda     file_name
+	sta     file_params + 0
+	lda     file_name + 1
+	sta     file_params + 1
+
+	lda     file_address
+	sta     file_params + 2
+	lda     file_address + 1
+	sta     file_params + 3
+
+	lda     #0
+	sta     file_params + 6
+
+	\\ Issue osfile call
+	ldx     #LO(file_params)
+	ldy     #HI(file_params)
+	lda     #$ff
+
+	jmp 	OSFILE
+
+.printString
+    pla
+    sta 	str+1
+    pla    
+	sta 	str+2
+
+.strOut
+    inc 	str+1
+    bne 	str
+    inc 	str+2
+
+.str
+    lda 	$ffff           ; Self-Modified
+    beq 	strEnd
+    jsr 	OSWRCH
+    jmp 	strOut
+
+.strEnd
+    lda 	str+2
+    pha
+    lda 	str+1
+    pha
+
+    rts
+
+.moveTextCursor
+    lda 	#31
+    jsr 	OSWRCH
+    txa
+    jsr 	OSWRCH 
+    tya
+    jmp 	OSWRCH
+
+.printMetadata
+	ldy 	#0
+.read_loop
+	cpy 	file_number
+	beq 	printMetadataString
+
+	iny
+	clc
+	lda 	readptr + 0
+	adc 	strLen
+	sta 	readptr + 0
+	lda 	readptr + 1
+	adc 	#0
+	sta 	readptr + 1
+
+	jmp 	read_loop
+
+.printMetadataString
+	ldy 	#$00 
+.printMetadataStringLoop
+	lda 	(readptr),Y 
+	jsr 	OSWRCH
+	iny
+	cmp 	#&0D
+	bne 	printMetadataStringLoop
+
+	rts

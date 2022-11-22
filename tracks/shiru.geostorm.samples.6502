@@ -1,0 +1,35 @@
+INCLUDE ".\constants.h.6502"
+ORG SAMPLES
+.start
+
+	equb    lo(sample_1)
+    equb    lo(sample_2)
+    equb    lo(sample_3)
+    equb    lo(sample_4)
+    equb    lo(sample_5)
+    equb    lo(sample_6)
+    equb    lo(sample_7)
+    equb    hi(sample_1)
+    equb    hi(sample_2)
+    equb    hi(sample_3)
+    equb    hi(sample_4)
+    equb    hi(sample_5)
+    equb    hi(sample_6)
+    equb    hi(sample_7)
+
+;sample data
+ALIGN 256
+.sample_1
+.sample_2
+.sample_3
+.sample_4
+.sample_5
+.sample_6
+.sample_7
+
+.end
+
+SAVE ".\tracks\shiru.geostorm.samples.bin",start,end
+
+
+PRINT "Geostorm samples size      = ", ~end-start

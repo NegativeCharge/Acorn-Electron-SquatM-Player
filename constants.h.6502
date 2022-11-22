@@ -1,0 +1,21 @@
+OSFILE                  = $FFDD
+OSBYTE                  = $FFF4 
+OSWRCH                  = $FFEE
+
+SHEILA_COUNTER          = $FE06
+SHEILA_MISC_CONTROL     = $FE07
+
+SPEAKER_OFF             = %10100001                             ;=SPEAKER_ON-1 (!)
+SPEAKER_ON              = %10100010
+
+OP_NOP                  = $EA
+OP_ROL_A                = $2A
+
+CYCLES                  = 39                                    ;39 - calibrated with "let's go" track (Original: 02:10.0. Electron: 02:11.3)
+COUNT                   = (((120 + 37) * 2 * CYCLES) / 56)      ;56 - noise_loop, 120+37=157c sound_loop. Noise duration, twice as long as inner sound loop
+
+TRACK_NUMBER            = 0
+ZERO_PAGE               = $69
+BASE                    = $E00
+SAMPLES                 = BASE + $880
+MUSIC                   = SAMPLES + $620

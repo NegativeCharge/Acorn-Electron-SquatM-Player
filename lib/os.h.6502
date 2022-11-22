@@ -1,0 +1,7 @@
+\\ Params block for osfile command
+.file_params		    SKIP 18
+.file_name              SKIP 2
+.file_address           SKIP 2
+
+.readptr                SKIP 2
+.writeptr               SKIP 2

@@ -1,14 +1,10 @@
-;sample data
-ALIGN 256
-.sample_1
-.sample_2
-.sample_3
-.sample_4
-.sample_5
-.sample_6
-.sample_7
+INCLUDE ".\constants.h.6502"
+ORG MUSIC
+
+.start
 
 ALIGN 2
+
 ;compiled music data
 .music_data
     equw loop
@@ -2611,3 +2607,9 @@ ALIGN 2
     equw $800
     equw $800
     equw 0
+.end
+
+SAVE ".\tracks\shiru.geostorm.track.bin",start,end
+
+PRINT "Geostorm track size        = ", ~end-start
+PRINT ""

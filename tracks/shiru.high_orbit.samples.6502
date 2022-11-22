@@ -1,0 +1,69 @@
+INCLUDE ".\constants.h.6502"
+ORG SAMPLES
+.start
+
+	equb    lo(sample_1)
+    equb    lo(sample_2)
+    equb    lo(sample_3)
+    equb    lo(sample_4)
+    equb    lo(sample_5)
+    equb    lo(sample_6)
+    equb    lo(sample_7)
+    equb    hi(sample_1)
+    equb    hi(sample_2)
+    equb    hi(sample_3)
+    equb    hi(sample_4)
+    equb    hi(sample_5)
+    equb    hi(sample_6)
+    equb    hi(sample_7)
+
+;sample data
+ALIGN 256
+
+.sample_1
+	equb 0,0,0,78,223,255,208,0
+	equb 0,0,0,0,5,255,255,255
+	equb 255,255,254,0,0,0,0,0
+	equb 0,0,0,0,0,0,0,21
+	equb 21,21,21,21,21,21,21,21
+	equb 21,21,21,21,21,21,21,21
+.sample_2
+	equb 63,160,0,31,255,224,0,0
+	equb 0,2,255,254,96,0,0,47
+	equb 253,0,0,0,0,165,191,216
+	equb 0,0,15,221,132,0,0,4
+	equb 64,59,136,0,0,8,15,164
+	equb 0,0,0,24,80,106,0,21
+	equb 21,21,21,21,21,21,21,21
+	equb 21,21,21,21,21,21,21,21
+.sample_3
+	equb 0,0,31,255,128,0,0,0
+	equb 0,0,31,251,0,0,0,0
+	equb 0,7,0,0,0,0,0,0
+	equb 0,0,128,0,0,0,0,21
+	equb 21,21,21,21,21,21,21,21
+	equb 21,21,21,21,21,21,21,21
+.sample_4
+	equb 0,0,127,255,224,0,0,0
+	equb 0,1,191,255,128,0,0,0
+	equb 7,255,189,128,0,0,0,0
+	equb 0,53,222,192,0,0,0,21
+	equb 21,21,21,21,21,21,21,21
+	equb 21,21,21,21,21,21,21,21
+.sample_5
+	equb 0,0,255,255,224,0,0,0
+	equb 0,9,255,255,128,0,0,0
+	equb 63,255,253,192,0,0,0,0
+	equb 0,127,254,192,0,0,0,21
+	equb 21,21,21,21,21,21,21,21
+	equb 21,21,21,21,21,21,21,21
+.sample_6
+.sample_7
+
+
+.end
+
+SAVE ".\tracks\shiru.high_orbit.samples.bin",start,end
+
+
+PRINT "High Orbit samples size    = ", ~end-start

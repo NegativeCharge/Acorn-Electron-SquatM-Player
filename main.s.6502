@@ -4,28 +4,18 @@
 ;Ported to the Acorn Electron by Negative Charge 11'22
 ;Optimisations of the Acorn Electron version by 0xC0DE 11'22
 
-SHEILA_COUNTER          = &FE06
-SHEILA_MISC_CONTROL     = &FE07
-OSBYTE                  = &FFF4
-OSWRCH                  = &FFEE
+INCLUDE "constants.h.6502"
 
-SPEAKER_OFF             = %10100001 ; =SPEAKER_ON-1 (!)
-SPEAKER_ON              = %10100010
-
-OP_NOP                  = &EA
-OP_ROL_A                = &2A
-
-CYCLES                  = 39                                ;39 calibrated with "let's go" track (Original: 02:10.0. Electron: 02:11.3)
-COUNT                   = (((120 + 37) * 2 * CYCLES) / 56)  ;56c noise_loop, 120+37=157c sound_loop. Noise duration, twice as long as inner sound loop
-
-ORG     $00
+ORG     ZERO_PAGE
 GUARD   $9f
+
+INCLUDE "lib\os.h.6502"
 
 .vars_start
 
 .pattern_ptr                            SKIP 2
 .sample_ptr                             SKIP 2
-.sample_mask                            SKIP 1        ;&00 or &80
+.sample_mask                            SKIP 1        ;$00 or $80
 .sample_bit                             SKIP 1
 .sample_out                             SKIP 1
 .row_length                             SKIP 1
@@ -46,11 +36,13 @@ GUARD   $9f
 
 .vars_end
 
-ORG     &E00
+ORG     BASE
 GUARD   &5800
 
 .start
+    INCLUDE "lib\os.s.6502"
 
+.play
     lda     #143
     ldx     #12
     ldy     #$FF
@@ -73,6 +65,9 @@ GUARD   &5800
 
     sei                        ;Disable interrupts
 
+    lda     #TRACK_NUMBER
+    sta     file_number
+
     lda     #$00
     sta     SHEILA_COUNTER     ;Zero the ULA SHEILA counter (FE06), creating a toggle speaker (inaudible frequency)
     tax
@@ -81,6 +76,73 @@ GUARD   &5800
     inx
     cpx     #vars_end-vars_start
     bne     clear_vars
+
+    \ Print Track Title
+    ldx     #1
+    Ldy     #27
+    jsr     moveTextCursor
+
+    ldx     #LO(track_names)
+    stx     readptr+0
+    ldy     #HI(track_names)
+    sty     readptr+1
+    ldx     #12                ;Length of each entry in track_names
+    stx     strLen
+    jsr     printMetadata
+    
+    \ Print Track Artist
+    ldx     #1
+    ldy     #29
+    jsr     moveTextCursor
+
+    ldx     #LO(track_artists)
+    stx     readptr+0
+    ldy     #HI(track_artists)
+    sty     readptr+1
+    ldx     #11                ;Length of each entry in track_artists
+    stx     strLen
+    jsr     printMetadata
+    
+    \ Load track into memory
+    lda     file_number
+    asl     a
+    asl     a
+    asl     a                  ; track_filenumber * 8 bytes per filename
+
+    \ Load sample data
+	clc
+	adc     #LO(sample_filenames)
+	sta     file_name + 0
+	lda     #HI(sample_filenames)
+	adc     #0
+	sta     file_name + 1
+
+    lda     #LO(sample_list)
+    sta     file_address + 0
+    lda     #HI(sample_list)
+    sta     file_address + 1
+
+    jsr     loadFile
+
+    lda     file_number
+    asl     a
+    asl     a
+    asl     a                  ; track_filenumber * 8 bytes per filename
+
+    \ Load track data
+	clc
+	adc     #LO(track_filenames)
+	sta     file_name + 0
+	lda     #HI(track_filenames)
+	adc     #0
+	sta     file_name + 1
+
+    lda     #LO(music_data)
+    sta     file_address + 0
+    lda     #HI(music_data)
+    sta     file_address + 1
+
+    jsr     loadFile
 
     lda     #LO(music_data+2)
     sta     pattern_ptr+0
@@ -170,9 +232,9 @@ GUARD   &5800
 
     ldx     row_flags
     beq     skip_drum
-    lda     sample_list_lo-1,x
+    lda     sample_list-1,x
     sta     sample_ptr+0
-    lda     sample_list_hi-1,x
+    lda     sample_list+6,x
     sta     sample_ptr+1
     lda     #$80
     sta     sample_mask
@@ -375,7 +437,7 @@ GUARD   &5800
 
     dey
     lda     (sample_ptr),y        ;it's okay if sample_ptr is not valid
-    cmp     #21
+    cmp     #$15                  ;end of sample marker - must not appear anywhere else in the sample data
     bne     sample_no_stop
 
     lda     #0                    ;disable sample reading
@@ -396,29 +458,44 @@ GUARD   &5800
 .L14
     jmp     play_loop
 
-.sample_list_lo
-    equb    lo(sample_1)
-    equb    lo(sample_2)
-    equb    lo(sample_3)
-    equb    lo(sample_4)
-    equb    lo(sample_5)
-    equb    lo(sample_6)
-    equb    lo(sample_7)
+.file_number
+    EQUB 0
+.strLen
+    EQUB 0
+    
+.track_names
+    EQUS "Let's Go   ",13
+    EQUS "Squat Party",13
+    EQUS "Geostorm   ",13
+    EQUS "High Orbit ",13
 
-.sample_list_hi
-    equb    hi(sample_1)
-    equb    hi(sample_2)
-    equb    hi(sample_3)
-    equb    hi(sample_4)
-    equb    hi(sample_5)
-    equb    hi(sample_6)
-    equb    hi(sample_7)
+.track_artists
+    EQUS "@shiru8bit",13
+    EQUS "@djh0ffman",13
+    EQUS "@shiru8bit",13
+    EQUS "@shiru8bit",13
 
-    INCLUDE "tracks\shiru.lets_go.track.6502"
+.track_filenames
+    EQUS ":0.$.T1", 13
+    EQUS ":0.$.T2", 13
+    EQUS ":0.$.T3", 13
+    EQUS ":0.$.T4", 13
+
+.sample_filenames
+    EQUS ":0.$.S1", 13
+    EQUS ":0.$.S2", 13
+    EQUS ":0.$.S3", 13
+    EQUS ":0.$.S4", 13
+
+ORG SAMPLES
+.sample_list
+
+ORG MUSIC
+.music_data
 
 .end
 
-SAVE "MAIN",start,end
+SAVE "MAIN",start,end,play
 
 \ ******************************************************************
 \ *    Memory Info
@@ -440,3 +517,19 @@ PRINT "-----------------------"
 PUTBASIC "loader.bas","LOADER"
 PUTFILE  "screens\bgrnd.bin","BGRND",&5800
 PUTFILE  "BOOT","!BOOT",&FFFF
+
+\ ******************************************************************
+\ * Samples
+\ ******************************************************************
+PUTFILE ".\tracks\shiru.lets_go.samples.bin", "S1", sample_list
+PUTFILE ".\tracks\dj.h0ffman.squat_party.samples.bin", "S2", sample_list
+PUTFILE ".\tracks\shiru.geostorm.samples.bin", "S3", sample_list
+PUTFILE ".\tracks\shiru.high_orbit.samples.bin", "S4", sample_list
+
+\ ******************************************************************
+\ * Tracks
+\ ******************************************************************
+PUTFILE ".\tracks\shiru.lets_go.track.bin", "T1", music_data
+PUTFILE ".\tracks\dj.h0ffman.squat_party.track.bin", "T2", music_data
+PUTFILE ".\tracks\shiru.geostorm.track.bin", "T3", music_data
+PUTFILE ".\tracks\shiru.high_orbit.track.bin", "T4", music_data
