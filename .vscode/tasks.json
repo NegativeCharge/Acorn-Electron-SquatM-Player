@@ -7,7 +7,7 @@
     ],
     "tasks": [
         {
-            "label": "ca65-squatm-player.ssd",
+            "label": "SquatM_Beeper_Engine.ssd",
             "type": "shell",
             "args": [
                 "make.bat"
@@ -27,6 +27,20 @@
                 }
             },
             "group": "build"
+        },{
+            "label": "Run in Elkultor",
+            "type": "shell",
+            "args": [
+                "start \"Elkulator.exe -disc .\\SquatM_Beeper_Engine.ssd\""
+            ],
+            "group": "test"
+        },{
+            "label": "Run in ElectrEm",
+            "type": "shell",
+            "args": [
+                "start \"ElectrEm.exe -disc .\\SquatM_Beeper_Engine.ssd\""
+            ],
+            "group": "test"
         }
     ]
 }
