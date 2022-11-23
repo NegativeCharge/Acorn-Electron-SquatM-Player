@@ -65,43 +65,18 @@ GUARD   &5800
 
     sei                        ;Disable interrupts
 
-    lda     #TRACK_NUMBER
-    sta     file_number
-
+.init
     lda     #$00
     sta     SHEILA_COUNTER     ;Zero the ULA SHEILA counter (FE06), creating a toggle speaker (inaudible frequency)
     tax
+    tay
 .clear_vars
     sta     vars_start,x
     inx
     cpx     #vars_end-vars_start
     bne     clear_vars
 
-    \ Print Track Title
-    ldx     #1
-    Ldy     #27
-    jsr     moveTextCursor
-
-    ldx     #LO(track_names)
-    stx     readptr+0
-    ldy     #HI(track_names)
-    sty     readptr+1
-    ldx     #12                ;Length of each entry in track_names
-    stx     strLen
-    jsr     printMetadata
-    
-    \ Print Track Artist
-    ldx     #1
-    ldy     #29
-    jsr     moveTextCursor
-
-    ldx     #LO(track_artists)
-    stx     readptr+0
-    ldy     #HI(track_artists)
-    sty     readptr+1
-    ldx     #11                ;Length of each entry in track_artists
-    stx     strLen
-    jsr     printMetadata
+    jsr     printTrackMetadata
     
     \ Load track into memory
     lda     file_number
@@ -150,6 +125,17 @@ GUARD   &5800
     sta     pattern_ptr+1
     bne     play_loop          ;jump always
 
+.end_track
+    \\ Increment file in table
+    ldx     file_number
+    inx
+    cpx     #NUM_TRACKS
+    bcc     file_number_set
+    ldx     #0
+.file_number_set
+    stx     file_number
+    jmp     init
+
 .return_loop
     lda     music_data+0
     sta     pattern_ptr+0
@@ -163,7 +149,7 @@ GUARD   &5800
     sta     row_flags
     iny
     lda     (pattern_ptr),y    ;duration of the row (0=loop), bit 7 percussion
-    beq     return_loop
+    beq     end_track
     
     sta     row_length
     iny
@@ -457,12 +443,7 @@ GUARD   &5800
     jmp     sound_loop_0
 .L14
     jmp     play_loop
-
-.file_number
-    EQUB 0
-.strLen
-    EQUB 0
-    
+   
 .track_names
     EQUS "Let's Go   ",13
     EQUS "Squat Party",13
@@ -487,6 +468,13 @@ GUARD   &5800
     EQUS ":0.$.S3", 13
     EQUS ":0.$.S4", 13
 
+.file_number
+    EQUB 0
+.strLen
+    EQUB 0
+
+.end_of_code
+
 ORG SAMPLES
 .sample_list
 
@@ -505,6 +493,7 @@ PRINT "-----------------------"
 PRINT "  1-BIT SQUATM PLAYER  "
 PRINT "-----------------------"
 PRINT "CODE size       = ", ~end-start
+PRINT "END OF CODE     = ", ~end_of_code
 PRINT "-----------------------"
 PRINT "HIGH WATERMARK  = ", ~P%
 PRINT "FREE            = ", ~start+end

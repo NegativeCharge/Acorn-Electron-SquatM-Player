@@ -81,3 +81,31 @@
 	bne 	printMetadataStringLoop
 
 	rts
+
+.printTrackMetadata
+
+    \ Print Track Title
+    ldx     #1
+    ldy     #27
+    jsr     moveTextCursor
+
+    ldx     #LO(track_names)
+    stx     readptr+0
+    ldy     #HI(track_names)
+    sty     readptr+1
+    ldx     #12                ;Length of each entry in track_names
+    stx     strLen
+    jsr     printMetadata
+    
+    \ Print Track Artist
+    ldx     #1
+    ldy     #29
+    jsr     moveTextCursor
+
+    ldx     #LO(track_artists)
+    stx     readptr+0
+    ldy     #HI(track_artists)
+    sty     readptr+1
+    ldx     #11                ;Length of each entry in track_artists
+    stx     strLen
+    jmp     printMetadata

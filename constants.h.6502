@@ -14,8 +14,8 @@ OP_ROL_A                = $2A
 CYCLES                  = 39                                    ;39 - calibrated with "let's go" track (Original: 02:10.0. Electron: 02:11.3)
 COUNT                   = (((120 + 37) * 2 * CYCLES) / 56)      ;56 - noise_loop, 120+37=157c sound_loop. Noise duration, twice as long as inner sound loop
 
-TRACK_NUMBER            = 0
+NUM_TRACKS              = 4
 ZERO_PAGE               = $69
 BASE                    = $E00
-SAMPLES                 = BASE + $880
-MUSIC                   = SAMPLES + $620
+SAMPLES                 = BASE + $340
+MUSIC                   = SAMPLES + $640

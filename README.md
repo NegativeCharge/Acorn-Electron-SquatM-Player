@@ -19,3 +19,4 @@ Release Notes:
 - v0.5 - Cycle optimisation to sound loop by @0xC0DE6502.
 - v0.6 - Further optimisation by @0xC0DE6502, negating the need for a turbo board.
 - v0.7 - Initial implementation of dynamic loading of track and sample data
+- v0.8 - Implement basic player that cycles through available tracks from disk
