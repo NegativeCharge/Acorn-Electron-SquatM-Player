@@ -93,7 +93,7 @@
     stx     readptr+0
     ldy     #HI(track_names)
     sty     readptr+1
-    ldx     #12                ;Length of each entry in track_names
+    ldx     #15                ;Length of each entry in track_names
     stx     strLen
     jsr     printMetadata
     

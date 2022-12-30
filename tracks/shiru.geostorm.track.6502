@@ -1,4 +1,4 @@
-INCLUDE ".\constants.h.6502"
+INCLUDE "..\constants.h.6502"
 ORG MUSIC
 
 .start
@@ -2609,7 +2609,7 @@ ALIGN 2
     equw 0
 .end
 
-SAVE ".\tracks\shiru.geostorm.track.bin",start,end
+SAVE ".\shiru.geostorm.track.bin",start,end
 
 PRINT "Geostorm track size        = ", ~end-start
 PRINT ""

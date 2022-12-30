@@ -1,4 +1,4 @@
-INCLUDE ".\constants.h.6502"
+INCLUDE "..\constants.h.6502"
 ORG MUSIC
 
 .start
@@ -1447,7 +1447,7 @@ ALIGN 2
 	equw 0
 .end
 
-SAVE ".\tracks\dj.h0ffman.squat_party.track.bin",start,end
+SAVE ".\dj.h0ffman.squat_party.track.bin",start,end
 
 PRINT "Squat Party track size     = ", ~end-start
 PRINT ""

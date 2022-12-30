@@ -1,4 +1,4 @@
-INCLUDE ".\constants.h.6502"
+INCLUDE "..\constants.h.6502"
 ORG SAMPLES
 .start
 
@@ -63,7 +63,7 @@ ALIGN 256
 
 .end
 
-SAVE ".\tracks\shiru.high_orbit.samples.bin",start,end
+SAVE ".\shiru.high_orbit.samples.bin",start,end
 
 
 PRINT "High Orbit samples size    = ", ~end-start

@@ -1,4 +1,4 @@
-INCLUDE ".\constants.h.6502"
+INCLUDE "..\constants.h.6502"
 ORG SAMPLES
 .start
 
@@ -223,6 +223,6 @@ ALIGN 256
 
 .end
 
-SAVE ".\tracks\shiru.lets_go.samples.bin",start,end
+SAVE ".\shiru.lets_go.samples.bin",start,end
 
 PRINT "Lets Go sample size        = ", ~end-start

@@ -31,38 +31,18 @@ INCLUDE "lib\os.h.6502"
 .noise_pitch                            SKIP 1
 .noise_volume                           SKIP 1
 .temp                                   SKIP 1
-
-.temp_y                                 SKIP 1
+.temp2                                  SKIP 1
 
 .vars_end
 
 ORG     BASE
-GUARD   &5800
+GUARD   SCREEN
 
 .start
     INCLUDE "lib\os.s.6502"
 
 .play
-    lda     #143
-    ldx     #12
-    ldy     #$FF
-    jsr     OSBYTE             ;Claim NMI
-
-    lda     #$40
-    sta     $D00               ;Store RTI as NMI routine
-
-    lda     #163
-    ldx     #128
-    ldy     #1
-    jsr     OSBYTE             ;Disable printer and ADCs
-
-    lda     #0
-    sta     $2B2               ;Clear type byte for ROM 12 (Plus 1) in Paged ROM type table
-
-    lda     #$0F               ;Flush selected wait class
-    ldx     #$00               ;All waits flushed
-    jsr     OSBYTE
-
+    
     sei                        ;Disable interrupts
 
 .init
@@ -240,7 +220,7 @@ GUARD   &5800
     lda     (pattern_ptr),y        ;read noise pitch
     iny
 
-    sty     temp_y
+    sty     temp
 
     sta     noise_pitch
     tay                            ;used to be noise_div
@@ -263,7 +243,7 @@ GUARD   &5800
 .noise_skip
 
     FOR n, 1, 6
-      rol temp                     ;5 dummy
+      rol temp2                    ;5 dummy
     NEXT
     jmp     noise_next             ;3
     ; 2+2+6*5+3 = 37c
@@ -297,7 +277,7 @@ GUARD   &5800
 
 ; ------------------------------------------------------------------------------------------------
 
-    ldy     temp_y
+    ldy     temp
 
 .skip_percussion
 
@@ -445,31 +425,35 @@ GUARD   &5800
     jmp     play_loop
    
 .track_names
-    EQUS "Let's Go   ",13
-    EQUS "Squat Party",13
-    EQUS "Geostorm   ",13
-    EQUS "High Orbit ",13
-
+    EQUS "Let's Go      ",13
+    EQUS "Squat Party   ",13
+    EQUS "Geostorm      ",13
+    EQUS "High Orbit    ",13
+    EQUS "Standing Wave ",13
+    EQUS "Freezing Point",13
 .track_artists
     EQUS "@shiru8bit",13
     EQUS "@djh0ffman",13
     EQUS "@shiru8bit",13
     EQUS "@shiru8bit",13
-
+    EQUS "@shiru8bit",13
+    EQUS "@shiru8bit",13
 .track_filenames
     EQUS ":0.$.T1", 13
     EQUS ":0.$.T2", 13
     EQUS ":0.$.T3", 13
     EQUS ":0.$.T4", 13
-
+    EQUS ":0.$.T5", 13
+    EQUS ":0.$.T6", 13
 .sample_filenames
     EQUS ":0.$.S1", 13
     EQUS ":0.$.S2", 13
     EQUS ":0.$.S3", 13
     EQUS ":0.$.S4", 13
-
+    EQUS ":0.$.S5", 13
+    EQUS ":0.$.S6", 13
 .file_number
-    EQUB 0
+    EQUB 5
 .strLen
     EQUB 0
 
@@ -513,7 +497,9 @@ PUTFILE  "BOOT","!BOOT",&FFFF
 PUTFILE ".\tracks\shiru.lets_go.samples.bin", "S1", sample_list
 PUTFILE ".\tracks\dj.h0ffman.squat_party.samples.bin", "S2", sample_list
 PUTFILE ".\tracks\shiru.geostorm.samples.bin", "S3", sample_list
-PUTFILE ".\tracks\shiru.high_orbit.samples.bin", "S4", sample_list
+PUTFILE ".\tracks\shiru.high_orbit.samples.bin", "S4", 5
+PUTFILE ".\tracks\shiru.standing_wave.samples.bin", "S5", sample_list
+PUTFILE ".\tracks\shiru.freezing_point.samples.bin", "S6", sample_list
 
 \ ******************************************************************
 \ * Tracks
@@ -522,3 +508,5 @@ PUTFILE ".\tracks\shiru.lets_go.track.bin", "T1", music_data
 PUTFILE ".\tracks\dj.h0ffman.squat_party.track.bin", "T2", music_data
 PUTFILE ".\tracks\shiru.geostorm.track.bin", "T3", music_data
 PUTFILE ".\tracks\shiru.high_orbit.track.bin", "T4", music_data
+PUTFILE ".\tracks\shiru.standing_wave.track.bin", "T5", music_data
+PUTFILE ".\tracks\shiru.freezing_point.track.bin", "T6", music_data

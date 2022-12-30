@@ -1,3 +1,4 @@
+
 INCLUDE "..\constants.h.6502"
 ORG SAMPLES
 .start
@@ -30,7 +31,6 @@ ALIGN 256
 
 .end
 
-SAVE ".\shiru.geostorm.samples.bin",start,end
+SAVE ".\shiru.standing_wave.samples.bin",start,end
 
-
-PRINT "Geostorm samples size      = ", ~end-start
+PRINT "Standing Wave sample size  = ", ~end-start

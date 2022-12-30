@@ -1,4 +1,4 @@
-INCLUDE ".\constants.h.6502"
+INCLUDE "..\constants.h.6502"
 ORG MUSIC
 
 .start
@@ -2670,7 +2670,7 @@ ALIGN 2
 	equw 0
 .end
 
-SAVE ".\tracks\shiru.lets_go.track.bin",start,end
+SAVE ".\shiru.lets_go.track.bin",start,end
 
 PRINT "Lets Go track size         = ", ~end-start
 PRINT ""
